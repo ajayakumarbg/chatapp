@@ -11,6 +11,8 @@ app.config['MONGO_DBNAME'] = 'crawl'
 app.config['MONGO_URI'] = 'mongodb://amith:amith123@ds239368.mlab.com:39368/vor'
 
 mongo = PyMongo(app)
+def takeSecond(elem):
+    return elem[]
 
 @app.route('/crawl/<name>', methods=['GET'])
 def get_all_frameworks(name):
@@ -20,9 +22,13 @@ def get_all_frameworks(name):
 
     for q in framework.find():
         output.append({'files' : q[name]})
-
-    return jsonify({'result' : output})
-
+    print(type(output))
+    output.sort(key=takeSecond)
+    print(output)
+    a=jsonify({'result' : output})
+    print(a)
+    return a
+     
 
 #@app.route('/crawl/<id>', methods=['GET'])
 #def get_one_id(id):

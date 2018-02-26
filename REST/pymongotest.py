@@ -23,11 +23,32 @@ def get_nested(data, *args):
 
 @app.route('/crawl/<name>', methods=['GET'])
 def get_all_frameworks(name):
+    doc = []
+    i = 0 
+    for itm in mongo.db.crawl.find():
+       k=itm['_id']
+       k=str(k)
+       #doc[i]= k
+       #doc[1]=k
+       print(k)
+       i=i+1
+    print(k)
+    z=0
+    #doc = []
+    ls =  mongo.db.crawl
+    lst =[]
+    for ln in ls.find():
+      lst.append({'_id' : ln['_id']})
+      #print(lst)
+      z=z+1
+      
+    print(lst[1])
+    
     framework = mongo.db.TFIDF
 
     output = []
-    doc=["5a8fd4500262df2da409af79","5a8fd4540262df2da409af7a","5a8fd4560262df2da409af7b","5a8fd4590262df2da409af7c","5a8fd45c0262df2da409af7d","5a8fd4600262df2da409af7e","5a8fd4620262df2da409af7f","5a8fd4660262df2da409af80","5a8fd4680262df2da409af81","5a8fd46b0262df2da409af82","5a8fd46e0262df2da409af83","5a8fd4710262df2da409af84","5a8fd4730262df2da409af85","5a8fd4760262df2da409af86","5a8fd4790262df2da409af87","5a8fd47c0262df2da409af88","5a8fd4800262df2da409af89"] 
-        
+    doc=[k,"5a8fd4540262df2da409af7a","5a8fd4560262df2da409af7b","5a8fd4590262df2da409af7c","5a8fd45c0262df2da409af7d","5a8fd4600262df2da409af7e","5a8fd4620262df2da409af7f","5a8fd4660262df2da409af80","5a8fd4680262df2da409af81","5a8fd46b0262df2da409af82","5a8fd46e0262df2da409af83","5a8fd4710262df2da409af84","5a8fd4730262df2da409af85","5a8fd4760262df2da409af86","5a8fd4790262df2da409af87","5a8fd47c0262df2da409af88","5a8fd4800262df2da409af89"] 
+    print(doc[0])   
 
     for q in framework.find():
         output.append({'files' : q[name]})
@@ -35,7 +56,7 @@ def get_all_frameworks(name):
     x=0
     m=0
     l=get_nested(q,name,doc[0])
-    while x < 17:
+    while x < (z-1):
         score=get_nested(q,name,doc[x])
         if score > l:
             l= get_nested(q,name,doc[x])
@@ -47,11 +68,14 @@ def get_all_frameworks(name):
     #m.decode("hex")
     crawl = mongo.db.crawl
     c = crawl.find_one({'_id' : bson.ObjectId(doc[m])})
-    #print(c)
+     #print(c)
     if c:
       output = {'output' : c['content']}
     else:
       output = "No such name"
+    tr = []
+    tr= get_nested(q,name)
+    print(tr)
      
     return jsonify({'search result' : output})
       

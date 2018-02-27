@@ -23,19 +23,7 @@ def get_nested(data, *args):
 
 @app.route('/crawl/<name>', methods=['GET'])
 def get_all_frameworks(name):
-    r=''
-    for i in '!@#$%^&*()_+-={}[]|\\\';:"<,>.?/':
-           r=name.split(i)
-           name=' '.join(r)
-    name=name.lower()
-    name2=name.split()
-    n=[]
-    f=open('stopwords.txt','r')
-    stopword=f.read().split()
-    for word in name2:
-      if word not in stopword:
-         n.append(word)
-    name2=n
+    name2=name.split(",")
     print name2[0]
     doc = []
     #i = 0 

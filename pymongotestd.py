@@ -16,6 +16,7 @@ from nltk.stem import WordNetLemmatizer
 from Clusterer import Cluster,tokenize_and_stem
 from Doc2vec_search import getCentroids,loadModel
 import pickle
+import spellcheck_c
 lm=WordNetLemmatizer()
 
 
@@ -177,118 +178,126 @@ def usersearch(username):
 @socketio.on('input')
 def get_all_frameworks(name,iter_n,username):
     print(type(name))
-    try:
-        IDs=cluster.clustSearch(name,'e')
-        paras=cluster.getParaList(IDs[iter_n])
-        print(iter_n)
-        #print(paras)
-        b=0
-        score=0
-        best1=0
-        para=0
-        best3=0
-        para3=0
-        para2=0
-        best2=0
-        content_length=len(paras)
-        #print(symmetric_sentence_similarity(name, paras[5]))
-        while b <  content_length:
-                mylist = paras[b]
-                
-                if len(mylist) > 10:
-                    score=symmetric_sentence_similarity(name, mylist)
-                    if score > best1 :
-                        print('in if')
-                        print('score is:',score)
-                        best3=best2
-                        best2=best1
-                        best1=score
-                        para3=para2
-                        para2=para
-                        para=b
-                        print('para2 at b=',b,' is :',para2)
-                        print('para3 at b=',b,' is :',para3)
-                b+=1
-
-        
-        
-        print('para is:',para)
-        print('para2 is:', para2)
-        print('para3 is:',para3)
-        
+    
+    checker = spellcheck_c.min_edit_distance(name)
+    print('spellcheck out', checker)
+    if checker != 1:
+        out="Sorry, did you mean "
+        out+= checker
+        out+= ' ?'
         output1=[]
-        output1.append(paras[para])
-        if para!=0:
+        output1.append(out)  
+        output1.append(3)      
+        socketio.emit('correction',output1)
+        name = checker
+        
+    IDs=cluster.clustSearch(name,'e')
+    print(IDs)
+    paras=cluster.getParaList(IDs[iter_n])
+    print(iter_n)
+    #print(paras)
+    b=0
+    score=0
+    best1=0
+    para=0
+    best3=0
+    para3=0
+    para2=0
+    best2=0
+    content_length=len(paras)
+    #print(symmetric_sentence_similarity(name, paras[5]))
+    while b <  content_length:
+            mylist = paras[b]
+            
+            if len(mylist) > 10:
+                score=symmetric_sentence_similarity(name, mylist)
+                if score > best1 :
+                    print('in if')
+                    print('score is:',score)
+                    best3=best2
+                    best2=best1
+                    best1=score
+                    para3=para2
+                    para2=para
+                    para=b
+                    print('para2 at b=',b,' is :',para2)
+                    print('para3 at b=',b,' is :',para3)
+            b+=1
 
-            output1.append(paras[para2])
-            output1.append(paras[para3])
-            
-        print('output1 is:',output1[0]) 
-            
+    
+    
+    print('para is:',para)
+    print('para2 is:', para2)
+    print('para3 is:',para3)
+    
+    output1=[]
+    output1.append(paras[para])
+    if para!=0:
+
+        output1.append(paras[para2])
+        output1.append(paras[para3])
+        
+    print('output1 is:',output1[0]) 
+        
+    user=mongo.db.userdata
+    val=user.find_one({"name":username,"query":name.lower()})
+    @socketio.on('relevance')
+    def printer(rel_para):
+        print (rel_para)
         user=mongo.db.userdata
         val=user.find_one({"name":username,"query":name.lower()})
-        @socketio.on('relevance')
-        def printer(rel_para):
-            print (rel_para)
-            user=mongo.db.userdata
-            val=user.find_one({"name":username,"query":name.lower()})
-        
-            if val==None :
-                emp_rec1 = {
-                "name":username,
-                "docchoice":doc[bestmatch[iter_n]],
-                "query":name.lower(),
-                "parachoice":rel_para
-                }
-                user.insert_one(emp_rec1)
-
-
-            user.update_many(
-                {"name":username, "query":name.lower()},
-                {
-                    "$set":{
-                            "docchoice":doc[bestmatch[iter_n]],
-                            "parachoice":rel_para
-                            },
-                    "$currentDate":{"lastModified":True}
-                    
-                    }
-            )         
-        
-        #if val==None :
-            #emp_rec1 = {
-            #"name":username,
-            #"docchoice":doc[bestmatch[iter_n]],
-        # "query":name.lower(),
-        # "parachoice":rel_para
-            #}
-            #user.insert_one(emp_rec1)
-
-
-        #user.update_many(
-            #{"name":username, "query":name.lower()},
-            #{
-                    #"$set":{
-                            #"docchoice":doc[bestmatch[iter_n]],
-                            #"parachoice":rel_para
-                        # },
-                # "$currentDate":{"lastModified":True}
-                    
-                # }
-            #)
-        #socketio.emit('imageConversionByServer',img64)    
-        output=[]
-        
-        socketio.emit('output',output1)
-        #socketio.emit('imageConversionByServer',img64)
-        return jsonify({'search result' : output})
     
-    except:
-        print("in except")
-        output1=[]
-        out=["Sorry, I am confused"]
-        output1.append(out)        
-        socketio.emit('output',output1)
+        if val==None :
+            emp_rec1 = {
+            "name":username,
+            "docchoice":doc[bestmatch[iter_n]],
+            "query":name.lower(),
+            "parachoice":rel_para
+            }
+            user.insert_one(emp_rec1)
+
+
+        user.update_many(
+            {"name":username, "query":name.lower()},
+            {
+                "$set":{
+                        "docchoice":doc[bestmatch[iter_n]],
+                        "parachoice":rel_para
+                        },
+                "$currentDate":{"lastModified":True}
+                
+                }
+        )         
+    
+    #if val==None :
+        #emp_rec1 = {
+        #"name":username,
+        #"docchoice":doc[bestmatch[iter_n]],
+    # "query":name.lower(),
+    # "parachoice":rel_para
+        #}
+        #user.insert_one(emp_rec1)
+
+
+    #user.update_many(
+        #{"name":username, "query":name.lower()},
+        #{
+                #"$set":{
+                        #"docchoice":doc[bestmatch[iter_n]],
+                        #"parachoice":rel_para
+                    # },
+            # "$currentDate":{"lastModified":True}
+                
+            # }
+        #)
+    #socketio.emit('imageConversionByServer',img64)    
+    output=[]
+    
+    socketio.emit('output',output1)
+    #socketio.emit('imageConversionByServer',img64)
+    return jsonify({'search result' : output})
+
+
       
 
 def getSyn(word):
